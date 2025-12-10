@@ -1,0 +1,23 @@
+# Docker 构建忽略文件
+# 这些文件不会被复制到 Docker 镜像中
+
+node_modules
+Dockerfile*
+docker-compose*
+.dockerignore
+.git
+.gitignore
+README.md
+LICENSE
+.vscode
+.cursor
+.idea
+.env
+.env.*
+coverage*
+dist
+tests
+docs
+富途年度账单
+*.md
+!src/**/*.md

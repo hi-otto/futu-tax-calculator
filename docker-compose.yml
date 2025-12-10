@@ -1,0 +1,16 @@
+# 富途税务计算器 Docker Compose 配置
+# 生成时间: 2025-12-11 23:09:24
+#
+# 启动: docker-compose up -d
+# 停止: docker-compose down
+# 日志: docker-compose logs -f
+
+version: '3.8'
+
+services:
+  futu-tax:
+    image: ghcr.io/hi-otto/futu-tax-calculator:latest
+    container_name: futu-tax-calculator
+    ports:
+      - "3020:80"
+    restart: unless-stopped
