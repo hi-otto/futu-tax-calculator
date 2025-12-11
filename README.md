@@ -17,7 +17,6 @@
 - 💱 **币种切换**：支持 CNY/USD/HKD 显示切换，方便核对原始账单
 - ⏰ **滞纳金计算**：内置滞纳金计算器，自动计算逾期缴税所需滞纳金
 - 📝 **小白友好**：预扣税等专业术语配有详细解释
-- 🐳 **Docker 部署**：支持容器化部署，一键启动
 
 ## 如何获取富途年度账单
 
@@ -31,76 +30,38 @@
 - **年度账单.xlsx** - 包含交易流水、资金进出等完整数据（必需）
 - **利息股息及其他收入汇总.xlsx** - 用于核对股息数据（可选）
 
-## 安装
+## 部署
 
-```bash
-bun install
-```
-
-## 使用方式
-
-### Web 界面
-
-```bash
-# 开发模式
-bun dev
-
-# 生产模式
-bun start
-```
-
-然后访问 http://localhost:3000
-
-### Docker 部署
-
-**方式一：一键部署（推荐）**
-
-无需 clone 仓库，两条命令即可启动：
-
-```bash
-# 第一步：下载配置
-curl -fsSL https://raw.githubusercontent.com/hi-otto/futu-tax-calculator/main/docker-compose-setup.sh | bash
-
-# 第二步：启动
-docker-compose up -d
-```
-
-然后访问 http://localhost:3020
-
-**方式二：直接运行镜像**
+**方式一：Docker 一键部署（推荐）**
 
 ```bash
 docker run -d -p 3020:80 ghcr.io/hi-otto/futu-tax-calculator:latest
 ```
 
-**方式三：clone 仓库部署**
+然后访问 http://localhost:3020
+
+**方式二：Docker Compose**
 
 ```bash
-git clone https://github.com/hi-otto/futu-tax-calculator.git
-cd futu-tax-calculator
+curl -fsSL https://raw.githubusercontent.com/hi-otto/futu-tax-calculator/main/docker-compose-setup.sh | bash
 docker-compose up -d
 ```
 
 ## 税务规则
 
-- **资本利得税**：20%，同年度盈亏可互抵
-- **股息税**：20%，境外已扣税可抵免（美股10%）
-- **利息税**：20%
-- **汇率**：纳税年度12月31日汇率中间价（数据来源：中国国家外汇管理局）
-- **滞纳金**：逾期未缴税款按日加收万分之五（汇算截止日期为次年6月30日）
+| 类型 | 税率 | 说明 |
+|------|------|------|
+| 资本利得税 | 20% | 同年度盈亏可互抵 |
+| 股息税 | 20% | 境外已扣税可抵免（美股10%） |
+| 利息税 | 20% | - |
+| 汇率 | - | 纳税年度12月31日中间价 |
+| 滞纳金 | 0.05%/日 | 汇算截止日为次年6月30日 |
 
-## 测试
-
-```bash
-bun test
-```
+> 汇率数据来源：[中国国家外汇管理局](https://www.safe.gov.cn/safe/rmbhlzjj/index.html)
 
 ## 文档
 
-- [产品需求文档 (PRD)](./docs/PRD.md)
 - [计算方式说明](./docs/CALCULATION.md) - 详细说明数据来源及计算逻辑
-- [GitHub Pages 部署指南](./docs/DEPLOY.md) - 自动部署到 GitHub Pages
-- [开发任务清单 (TODO)](./docs/TODO.md)
 
 ## 免责声明
 
