@@ -153,7 +153,13 @@ export function App() {
                 </div>
                 <h4 className="font-medium text-gray-900 mb-2">下载账单</h4>
                 <p className="text-sm text-gray-500">
-                  在富途牛牛APP中导出年度账单（Excel格式）
+                  富途牛牛APP：
+                  <span className="block mt-1 text-blue-600 font-medium">
+                    账户 → 更多 → 我的税表 → 年度账单
+                  </span>
+                  <span className="block mt-2 text-xs text-gray-400">
+                    下载「年度账单.xlsx」即可，「利息股息汇总」可用于核对
+                  </span>
                 </p>
               </div>
 
@@ -163,7 +169,7 @@ export function App() {
                 </div>
                 <h4 className="font-medium text-gray-900 mb-2">上传文件</h4>
                 <p className="text-sm text-gray-500">
-                  将账单文件拖拽到上方区域，支持多个年度
+                  上传「年度账单.xlsx」到上方区域，支持多年度多账户
                 </p>
               </div>
 
