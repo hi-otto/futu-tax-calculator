@@ -92,7 +92,7 @@ export function App() {
         <div className="flex items-center justify-center gap-2 mb-8 p-3 bg-green-50 rounded-xl">
           <Shield className="w-5 h-5 text-green-600" />
           <p className="text-sm text-green-700">
-            所有计算在本地完成，您的数据不会上传到任何服务器
+            所有计算在本地完成，您的数据不会上传到任何服务器，页面可以离线运行
           </p>
         </div>
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 import plugin from "bun-plugin-tailwind";
-import { existsSync } from "fs";
+import { existsSync, copyFileSync } from "fs";
 import { rm } from "fs/promises";
 import path from "path";
 
@@ -134,6 +134,17 @@ const result = await Bun.build({
   },
   ...cliConfig,
 });
+
+// Copy PWA files to output directory
+const pwaFiles = ["manifest.json", "sw.js", "logo.svg"];
+for (const file of pwaFiles) {
+  const srcPath = path.join("src", file);
+  const destPath = path.join(outdir, file);
+  if (existsSync(srcPath)) {
+    copyFileSync(srcPath, destPath);
+    console.log(`📱 Copied PWA file: ${file}`);
+  }
+}
 
 const end = performance.now();
 

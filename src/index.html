@@ -1,47 +1,149 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="免费、隐私友好的境外证券投资税务计算工具，支持富途年度账单自动解析，计算资本利得税、股息税等">
-  <meta name="keywords" content="富途税务,港美股个税,境外所得申报,资本利得税计算,股息税">
+
+  <!-- Primary SEO Meta Tags -->
+  <title>富途税务计算器 - 港美股投资个税申报神器</title>
+  <meta name="description" content="【免费在线】富途税务计算器，一键上传年度账单，自动计算港股美股资本利得税、股息税。数据本地处理，隐私安全无忧。支持多账户多年度，轻松完成境外所得个税申报。">
+  <meta name="keywords"
+    content="富途税务计算器,港美股个税,境外所得申报,资本利得税计算,股息税,富途年度账单,境外证券投资,个人所得税,海外投资报税,富途牛牛,美股报税,港股报税,QDII税务,境外投资收益">
   <meta name="author" content="futu-tax-calculator">
-  
-  <!-- Open Graph -->
-  <meta property="og:title" content="富途税务计算器 - 港美股投资个税计算">
-  <meta property="og:description" content="免费、隐私友好的境外证券投资税务计算工具">
-  <meta property="og:type" content="website">
-  
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <link rel="canonical" href="https://tax.futu-tools.com/">
+
   <!-- Theme Color -->
-  <meta name="theme-color" content="#0071E3">
-  
-  <title>富途税务计算器 - 港美股投资个税计算工具</title>
-  
+  <meta name="theme-color" content="#3B82F6">
+  <meta name="color-scheme" content="light">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://tax.futu-tools.com/">
+  <meta property="og:title" content="富途税务计算器 - 港美股投资个税申报神器">
+  <meta property="og:description" content="免费在线工具，一键计算境外证券投资税务。数据本地处理，隐私安全无忧。">
+  <meta property="og:image" content="https://tax.futu-tools.com/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:site_name" content="富途税务计算器">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="https://tax.futu-tools.com/">
+  <meta name="twitter:title" content="富途税务计算器 - 港美股投资个税申报神器">
+  <meta name="twitter:description" content="免费在线工具，一键计算境外证券投资税务。数据本地处理，隐私安全无忧。">
+  <meta name="twitter:image" content="https://tax.futu-tools.com/og-image.png">
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="./manifest.json">
+
   <!-- Favicon -->
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧮</text></svg>">
-  
-  <!-- Structured Data -->
+  <link rel="icon" type="image/svg+xml" href="./logo.svg">
+  <link rel="apple-touch-icon" href="./logo.svg">
+
+  <!-- iOS PWA Meta Tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="税务计算器">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="format-detection" content="telephone=no">
+
+  <!-- Structured Data - Enhanced -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
+    "@type": "WebApplication",
     "name": "富途税务计算器",
+    "alternateName": "Futu Tax Calculator",
+    "url": "https://tax.futu-tools.com/",
     "applicationCategory": "FinanceApplication",
-    "operatingSystem": "Web",
+    "operatingSystem": "Web Browser",
+    "browserRequirements": "Requires JavaScript",
     "offers": {
       "@type": "Offer",
       "price": "0",
       "priceCurrency": "CNY"
     },
-    "description": "免费、隐私友好的境外证券投资税务计算工具"
+    "description": "免费在线的富途税务计算器，一键上传年度账单，自动计算港股美股资本利得税、股息税。数据本地处理，隐私安全无忧。",
+    "featureList": [
+      "自动解析富途年度账单",
+      "计算资本利得税",
+      "计算股息税",
+      "支持多账户多年度",
+      "数据本地处理",
+      "支持导出CSV"
+    ],
+    "screenshot": "https://tax.futu-tools.com/og-image.png",
+    "softwareVersion": "1.0",
+    "author": {
+      "@type": "Organization",
+      "name": "futu-tax-calculator",
+      "url": "https://github.com/hi-otto/futu-tax-calculator"
+    }
   }
   </script>
+
+  <!-- FAQ Structured Data for Rich Results -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "富途税务计算器支持哪些税种？",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "支持计算资本利得税、股息税、利息税等境外证券投资相关的个人所得税。"
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "数据安全吗？",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "所有计算在本地完成，您的数据不会上传到任何服务器，页面可以离线运行，完全保护您的隐私。"
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "如何获取富途年度账单？",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "在富途牛牛APP中，进入「账户 → 更多 → 我的税表 → 年度账单」，下载「年度账单.xlsx」文件即可。"
+        }
+      }
+    ]
+  }
+  </script>
+
   <style>
-    body { background: linear-gradient(to bottom, #f9fafb, #ffffff); }
+    body {
+      background: linear-gradient(to bottom, #f9fafb, #ffffff);
+    }
   </style>
 </head>
+
 <body>
   <div id="root"></div>
   <script type="module" src="./frontend.tsx" async></script>
+
+  <!-- Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then((registration) => {
+            console.log('SW registered:', registration.scope);
+          })
+          .catch((error) => {
+            console.log('SW registration failed:', error);
+          });
+      });
+    }
+  </script>
 </body>
+
 </html>
