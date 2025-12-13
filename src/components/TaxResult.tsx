@@ -89,7 +89,7 @@ function LateFeeCalculator({ taxAmount, year }: { taxAmount: number; year: numbe
         className="flex items-center gap-2 text-sm text-amber-600 hover:text-amber-700 transition-colors"
       >
         <Calculator className="w-4 h-4" />
-        {showCalculator ? '收起滞纳金计算器' : '如未按时缴税，查看滞纳金'}
+        {showCalculator ? '收起滞纳金计算器' : '如未按时缴税，点击查看滞纳金'}
       </button>
 
       {showCalculator && (
@@ -153,12 +153,12 @@ function LateFeeCalculator({ taxAmount, year }: { taxAmount: number; year: numbe
 function ResultCard({
   title,
   value,
-  subtitle,
+  formula,
   highlight = false
 }: {
   title: string;
   value: string;
-  subtitle?: string;
+  formula?: string;
   highlight?: boolean;
 }) {
   return (
@@ -173,8 +173,10 @@ function ResultCard({
       <p className={`text-xl font-semibold mt-1 ${highlight ? 'text-blue-600' : 'text-gray-900'}`}>
         {value}
       </p>
-      {subtitle && (
-        <p className="text-xs text-gray-400 mt-1">{subtitle}</p>
+      {formula && (
+        <p className="text-xs text-blue-500 mt-1.5 font-medium bg-blue-50 px-2 py-1 rounded inline-block">
+          {formula}
+        </p>
       )}
     </div>
   );
@@ -212,50 +214,82 @@ function YearResult({ result, displayCurrency }: { result: TaxResultType, displa
         </div>
       </div>
 
-      {/* 概览卡片 */}
+      {/* 税务计算公式 */}
       <div className="p-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <ResultCard
-            title="资本利得税"
-            value={formatNumberWithCurrency(
-              convert(result.capitalGains.taxAmount.amount, 'CNY', displayCurrency, result.year),
-              displayCurrency
+        <div className="bg-white rounded-xl border border-gray-100 p-4">
+          <div className="space-y-3 text-sm">
+            {/* 资本利得税 */}
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">资本利得</span>
+              <div className="flex items-center gap-2">
+                {result.capitalGains.totalGain.amount <= 0 ? (
+                  <span className="text-gray-400">
+                    亏损 {formatNumberWithCurrency(Math.abs(convert(result.capitalGains.totalGain.amount, 'CNY', displayCurrency, result.year)), displayCurrency)}，无需纳税
+                  </span>
+                ) : (
+                  <span className="text-gray-500">
+                    {formatNumberWithCurrency(convert(result.capitalGains.totalGain.amount, 'CNY', displayCurrency, result.year), displayCurrency)} × 20%
+                  </span>
+                )}
+                <span className="text-gray-400">=</span>
+                <span className="font-medium text-gray-900 min-w-[80px] text-right">
+                  {formatNumberWithCurrency(convert(result.capitalGains.taxAmount.amount, 'CNY', displayCurrency, result.year), displayCurrency)}
+                </span>
+              </div>
+            </div>
+
+            {/* 股息税 */}
+            <div className="flex items-center justify-between">
+              <span className="text-gray-600">股息税</span>
+              <div className="flex items-center gap-2">
+                <span className="text-gray-500">
+                  {formatNumberWithCurrency(convert(result.dividendTax.totalDividend.amount, 'CNY', displayCurrency, result.year), displayCurrency)} × 20%
+                  {result.dividendTax.taxCredit.amount > 0 && (
+                    <span className="text-green-600"> − {formatNumberWithCurrency(convert(result.dividendTax.taxCredit.amount, 'CNY', displayCurrency, result.year), displayCurrency)}<span className="text-gray-400 text-xs">（预扣税抵免）</span></span>
+                  )}
+                </span>
+                <span className="text-gray-400">=</span>
+                <span className="font-medium text-gray-900 min-w-[80px] text-right">
+                  {formatNumberWithCurrency(convert(result.dividendTax.netTaxDue.amount, 'CNY', displayCurrency, result.year), displayCurrency)}
+                </span>
+              </div>
+            </div>
+
+            {/* 利息税（如果有） */}
+            {result.interestTax.totalInterest.amount > 0 && (
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600">利息税</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-500">
+                    {formatNumberWithCurrency(convert(result.interestTax.totalInterest.amount, 'CNY', displayCurrency, result.year), displayCurrency)} × 20%
+                  </span>
+                  <span className="text-gray-400">=</span>
+                  <span className="font-medium text-gray-900 min-w-[80px] text-right">
+                    {formatNumberWithCurrency(convert(result.interestTax.taxAmount.amount, 'CNY', displayCurrency, result.year), displayCurrency)}
+                  </span>
+                </div>
+              </div>
             )}
-            subtitle={`盈亏 ${formatNumberWithCurrency(convert(result.capitalGains.totalGain.amount, 'CNY', displayCurrency, result.year), displayCurrency)}`}
-          />
-          <ResultCard
-            title="股息税"
-            value={formatNumberWithCurrency(
-              convert(result.dividendTax.netTaxDue.amount, 'CNY', displayCurrency, result.year),
-              displayCurrency
-            )}
-            subtitle={`已抵免 ${formatNumberWithCurrency(convert(result.dividendTax.taxCredit.amount, 'CNY', displayCurrency, result.year), displayCurrency)}`}
-          />
-          <ResultCard
-            title="利息税"
-            value={formatNumberWithCurrency(
-              convert(result.interestTax.taxAmount.amount, 'CNY', displayCurrency, result.year),
-              displayCurrency
-            )}
-            subtitle={`利息 ${formatNumberWithCurrency(convert(result.interestTax.totalInterest.amount, 'CNY', displayCurrency, result.year), displayCurrency)}`}
-          />
-          <ResultCard
-            title="应缴总额"
-            value={formatNumberWithCurrency(
-              convert(result.summary.netTaxPayable.amount, 'CNY', displayCurrency, result.year),
-              displayCurrency
-            )}
-            highlight
-          />
+
+            {/* 分隔线 */}
+            <div className="border-t border-gray-200 pt-3">
+              <div className="flex items-center justify-between">
+                <span className="font-medium text-gray-900">应缴总额</span>
+                <span className="text-xl font-bold text-blue-600">
+                  {formatNumberWithCurrency(convert(result.summary.netTaxPayable.amount, 'CNY', displayCurrency, result.year), displayCurrency)}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* 滞纳金计算器 - 放在概览卡片下方 */}
+        {/* 滞纳金计算器 */}
         <LateFeeCalculator
           taxAmount={result.summary.netTaxPayable.amount}
           year={result.year}
         />
 
-        {/* 与富途核对 */}
+        {/* 年度收益 */}
         {result.annualReturn && (
           <div className="mt-4">
             <button
@@ -263,7 +297,7 @@ function YearResult({ result, displayCurrency }: { result: TaxResultType, displa
               className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 transition-colors"
             >
               <Info className="w-3.5 h-3.5" />
-              {showFutuCompare ? '收起' : '与富途APP核对数据'}
+              {showFutuCompare ? '收起' : '点击查看年度收益'}
             </button>
 
             {showFutuCompare && (
@@ -271,7 +305,7 @@ function YearResult({ result, displayCurrency }: { result: TaxResultType, displa
                 <div className="flex items-start gap-2 mb-3">
                   <Info className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
                   <p className="text-gray-500">
-                    以下为富途口径的「年度收益」，包含未实现盈亏，与税务申报的「已实现盈亏」不同。
+                    年度收益包含未实现盈亏，与税务申报的「已实现盈亏」不同。与富途APP显示可能有差异，因为本工具使用国家外汇管理局年末汇率，富途使用实时汇率。
                   </p>
                 </div>
                 <div className="grid grid-cols-3 gap-4 text-center">

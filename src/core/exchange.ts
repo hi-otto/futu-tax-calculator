@@ -125,10 +125,15 @@ export function convertMoney(money: Money, to: Currency, year: Year): Money {
   return { amount: convert(money.amount, money.currency, to, year), currency: to };
 }
 
-/** 仅格式化数字+货币符号 */
+/** 仅格式化数字+货币符号（带千分位） */
 export function formatNumberWithCurrency(amount: number, currency: Currency, decimals: number = 2): string {
   const symbols: Record<Currency, string> = { CNY: '¥', USD: '$', HKD: 'HK$' };
-  return `${symbols[currency]}${amount.toFixed(decimals)}`;
+  const formattedNumber = Math.abs(amount).toLocaleString('en-US', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
+  const sign = amount < 0 ? '-' : '';
+  return `${sign}${symbols[currency]}${formattedNumber}`;
 }
 
 /**
@@ -139,7 +144,7 @@ export function createMoney(amount: number, currency: Currency): Money {
 }
 
 /**
- * 格式化金额显示
+ * 格式化金额显示（带千分位）
  */
 export function formatMoney(money: Money, decimals: number = 2): string {
   const symbols: Record<Currency, string> = {
@@ -147,7 +152,12 @@ export function formatMoney(money: Money, decimals: number = 2): string {
     USD: '$',
     HKD: 'HK$',
   };
-  return `${symbols[money.currency]}${money.amount.toFixed(decimals)}`;
+  const formattedNumber = Math.abs(money.amount).toLocaleString('en-US', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
+  const sign = money.amount < 0 ? '-' : '';
+  return `${sign}${symbols[money.currency]}${formattedNumber}`;
 }
 
 /**

@@ -32,6 +32,12 @@ export function App() {
         // 计算税务
         const taxResults = calculateTax(allBills);
         setResults(taxResults);
+
+        // 滚动到结果区域
+        setTimeout(() => {
+          document.getElementById('tax-results')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+
         return allBills;
       });
     } catch (err) {
@@ -134,7 +140,7 @@ export function App() {
         )}
 
         {/* 计算结果 */}
-        <section>
+        <section id="tax-results" className="scroll-mt-20">
           <TaxResultDisplay
             results={results}
             unrecognized={bills.flatMap(b => (b.unrecognized ?? []).map(u => ({ source: u.source, reason: u.reason })))}
