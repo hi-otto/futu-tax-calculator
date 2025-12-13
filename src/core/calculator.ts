@@ -558,54 +558,65 @@ const rows = results.map(r => { const convAmt = (n: number) => convert(n, 'CNY',
  */
 export function generateTaxReport(result: TaxResult, displayCurrency: Currency = 'CNY'): string {
   const lines: string[] = [];
-  
+  const symbol = displayCurrency === 'CNY' ? '¥' : (displayCurrency === 'USD' ? '$' : 'HK$');
+  const fmt = (n: number) => `${symbol}${convert(n, 'CNY', displayCurrency, result.year).toFixed(2)}`;
+
+  // 检查是否有跨年持仓（估算成本）
+  const hasEstimatedCost = result.capitalGains.details.some(d => d.isEstimatedCost);
+
   lines.push(`═══════════════════════════════════════════════════════`);
   lines.push(`  ${result.year}年度 境外证券投资个人所得税计算报告`);
   lines.push(`═══════════════════════════════════════════════════════`);
+  lines.push(``);
+  lines.push(`生成时间：${new Date().toLocaleString('zh-CN')}`);
+  lines.push(`币种显示：${displayCurrency}`);
   lines.push(``);
   lines.push(`汇率信息（${result.exchangeRate.date}）`);
   lines.push(`  来源：${result.exchangeRate.source}`);
   lines.push(`  1 USD = ${(result.exchangeRate.USD / 100).toFixed(4)} CNY`);
   lines.push(`  1 HKD = ${(result.exchangeRate.HKD / 100).toFixed(4)} CNY`);
   lines.push(``);
-  
+
   lines.push(`───────────────────────────────────────────────────────`);
   lines.push(`一、财产转让所得（资本利得）`);
   lines.push(`───────────────────────────────────────────────────────`);
   lines.push(`  交易笔数：${result.capitalGains.details.length} 笔`);
-  { const symbol = displayCurrency === 'CNY' ? '¥' : (displayCurrency === 'USD' ? '$' : 'HK$'); const convAmt = (n:number)=>convert(n,'CNY',displayCurrency,result.year); lines.push(`  总盈亏：${symbol}${convAmt(result.capitalGains.totalGain.amount).toFixed(2)}`); }
-  { const symbol = displayCurrency === 'CNY' ? '¥' : (displayCurrency === 'USD' ? '$' : 'HK$'); const convAmt = (n:number)=>convert(n,'CNY',displayCurrency,result.year); lines.push(`  应税所得：${symbol}${convAmt(result.capitalGains.taxableGain.amount).toFixed(2)}`); }
-  { const symbol = displayCurrency === 'CNY' ? '¥' : (displayCurrency === 'USD' ? '$' : 'HK$'); const convAmt = (n:number)=>convert(n,'CNY',displayCurrency,result.year); lines.push(`  应纳税额（20%）：${symbol}${convAmt(result.capitalGains.taxAmount.amount).toFixed(2)}`); }
+  lines.push(`  总盈亏：${fmt(result.capitalGains.totalGain.amount)}`);
+  lines.push(`  应税所得：${fmt(result.capitalGains.taxableGain.amount)}`);
+  lines.push(`  应纳税额（20%）：${fmt(result.capitalGains.taxAmount.amount)}`);
+  if (hasEstimatedCost) {
+    lines.push(`  ※ 含跨年持仓，成本使用期初市价估算`);
+  }
   lines.push(``);
-  
+
   lines.push(`───────────────────────────────────────────────────────`);
   lines.push(`二、股息、红利所得`);
   lines.push(`───────────────────────────────────────────────────────`);
   lines.push(`  股息笔数：${result.dividendTax.details.length} 笔`);
-  { const symbol = displayCurrency === 'CNY' ? '¥' : (displayCurrency === 'USD' ? '$' : 'HK$'); const convAmt = (n:number)=>convert(n,'CNY',displayCurrency,result.year); lines.push(`  股息总额：${symbol}${convAmt(result.dividendTax.totalDividend.amount).toFixed(2)}`); }
-  { const symbol = displayCurrency === 'CNY' ? '¥' : (displayCurrency === 'USD' ? '$' : 'HK$'); const convAmt = (n:number)=>convert(n,'CNY',displayCurrency,result.year); lines.push(`  应纳税额（20%）：${symbol}${convAmt(result.dividendTax.grossTax.amount).toFixed(2)}`); }
-  { const symbol = displayCurrency === 'CNY' ? '¥' : (displayCurrency === 'USD' ? '$' : 'HK$'); const convAmt = (n:number)=>convert(n,'CNY',displayCurrency,result.year); lines.push(`  境外已扣税：${symbol}${convAmt(result.dividendTax.foreignTaxPaid.amount).toFixed(2)}`); }
-  { const symbol = displayCurrency === 'CNY' ? '¥' : (displayCurrency === 'USD' ? '$' : 'HK$'); const convAmt = (n:number)=>convert(n,'CNY',displayCurrency,result.year); lines.push(`  可抵免税额：${symbol}${convAmt(result.dividendTax.taxCredit.amount).toFixed(2)}`); }
-  { const symbol = displayCurrency === 'CNY' ? '¥' : (displayCurrency === 'USD' ? '$' : 'HK$'); const convAmt = (n:number)=>convert(n,'CNY',displayCurrency,result.year); lines.push(`  实际应补税：${symbol}${convAmt(result.dividendTax.netTaxDue.amount).toFixed(2)}`); }
+  lines.push(`  股息总额：${fmt(result.dividendTax.totalDividend.amount)}`);
+  lines.push(`  应纳税额（20%）：${fmt(result.dividendTax.grossTax.amount)}`);
+  lines.push(`  境外已扣税：${fmt(result.dividendTax.foreignTaxPaid.amount)}`);
+  lines.push(`  可抵免税额：${fmt(result.dividendTax.taxCredit.amount)}`);
+  lines.push(`  实际应补税：${fmt(result.dividendTax.netTaxDue.amount)}`);
   lines.push(``);
-  
+
   lines.push(`───────────────────────────────────────────────────────`);
   lines.push(`三、利息所得`);
   lines.push(`───────────────────────────────────────────────────────`);
-  { const symbol = displayCurrency === 'CNY' ? '¥' : (displayCurrency === 'USD' ? '$' : 'HK$'); const convAmt = (n:number)=>convert(n,'CNY',displayCurrency,result.year); lines.push(`  利息总额：${symbol}${convAmt(result.interestTax.totalInterest.amount).toFixed(2)}`); }
-  { const symbol = displayCurrency === 'CNY' ? '¥' : (displayCurrency === 'USD' ? '$' : 'HK$'); const convAmt = (n:number)=>convert(n,'CNY',displayCurrency,result.year); lines.push(`  应纳税额（20%）：${symbol}${convAmt(result.interestTax.taxAmount.amount).toFixed(2)}`); }
+  lines.push(`  利息总额：${fmt(result.interestTax.totalInterest.amount)}`);
+  lines.push(`  应纳税额（20%）：${fmt(result.interestTax.taxAmount.amount)}`);
   lines.push(``);
-  
+
   lines.push(`═══════════════════════════════════════════════════════`);
   lines.push(`  汇  总`);
   lines.push(`═══════════════════════════════════════════════════════`);
-  { const symbol = displayCurrency === 'CNY' ? '¥' : (displayCurrency === 'USD' ? '$' : 'HK$'); const convAmt = (n:number)=>convert(n,'CNY',displayCurrency,result.year); lines.push(`  应纳税总额：${symbol}${convAmt(result.summary.totalTaxDue.amount).toFixed(2)}`); }
-  { const symbol = displayCurrency === 'CNY' ? '¥' : (displayCurrency === 'USD' ? '$' : 'HK$'); const convAmt = (n:number)=>convert(n,'CNY',displayCurrency,result.year); lines.push(`  可抵免总额：${symbol}${convAmt(result.summary.totalTaxCredit.amount).toFixed(2)}`); }
+  lines.push(`  应纳税总额：${fmt(result.summary.totalTaxDue.amount)}`);
+  lines.push(`  可抵免总额：${fmt(result.summary.totalTaxCredit.amount)}`);
   lines.push(`  ────────────────────────────────`);
-  { const symbol = displayCurrency === 'CNY' ? '¥' : (displayCurrency === 'USD' ? '$' : 'HK$'); const convAmt = (n:number)=>convert(n,'CNY',displayCurrency,result.year); lines.push(`  实际应缴税额：${symbol}${convAmt(result.summary.netTaxPayable.amount).toFixed(2)}`); }
+  lines.push(`  实际应缴税额：${fmt(result.summary.netTaxPayable.amount)}`);
   lines.push(``);
   lines.push(`※ 本报告仅供参考，不构成税务建议。`);
   lines.push(`  请以税务机关最终核定为准。`);
-  
+
   return lines.join('\n');
 }

@@ -2,12 +2,12 @@
   "name": "富途税务计算器",
   "short_name": "税务计算器",
   "description": "免费在线的境外证券投资税务计算工具，支持富途年度账单自动解析",
-  "start_url": "/",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#3B82F6",
   "orientation": "portrait-primary",
-  "scope": "/",
+  "scope": "./",
   "lang": "zh-CN",
   "categories": [
     "finance",
@@ -15,7 +15,7 @@
   ],
   "icons": [
     {
-      "src": "/logo.svg",
+      "src": "./logo.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
@@ -26,10 +26,10 @@
       "name": "开始计算",
       "short_name": "计算",
       "description": "上传账单开始计算税务",
-      "url": "/",
+      "url": "./",
       "icons": [
         {
-          "src": "/logo.svg",
+          "src": "./logo.svg",
           "sizes": "any"
         }
       ]

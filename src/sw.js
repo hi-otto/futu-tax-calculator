@@ -1,12 +1,12 @@
 // Service Worker for 富途税务计算器 PWA
 const CACHE_NAME = 'futu-tax-calculator-v1';
 
-// 需要缓存的资源列表
+// 需要缓存的资源列表（使用相对路径，支持子目录部署）
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/logo.svg'
+  './',
+  './index.html',
+  './manifest.json',
+  './logo.svg'
 ];
 
 // 安装事件 - 缓存静态资源
