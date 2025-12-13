@@ -5,6 +5,16 @@
 
 一款隐私友好、开源的境外证券投资税务计算工具，帮助中国大陆税务居民快速计算港美股投资收益应缴纳的个人所得税。
 
+## 在线体验
+
+👉 **https://hi-otto.github.io/futu-tax-calculator/**
+
+<p align="center">
+  <img src="./docs/qrcode.png" width="200" alt="扫码访问" />
+  <br/>
+  <em>📱 手机扫码访问</em>
+</p>
+
 ## 特性
 
 - 🔒 **隐私优先**：所有计算在本地浏览器完成，数据不上传服务器
