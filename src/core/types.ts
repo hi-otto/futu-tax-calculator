@@ -138,6 +138,7 @@ export interface CapitalGainDetail {
   fees: Money;
   gain: Money;            // 盈亏（原币种）
   gainCNY: Money;         // 盈亏（人民币）
+  isEstimatedCost?: boolean; // 成本是否为期初市价估算
 }
 
 /** 按币种汇总 */
@@ -190,6 +191,23 @@ export interface TaxSummary {
   netTaxPayable: Money;       // 实际应缴税额
 }
 
+/** 年度收益（富途口径，含未实现盈亏） */
+export interface AnnualReturn {
+  startMarketValue: Money;    // 期初市值
+  endMarketValue: Money;      // 期末市值
+  netCashFlow: Money;         // 净现金流（买入为负，卖出为正）
+  totalReturn: Money;         // 年度收益 = 期末 - 期初 + 净现金流
+  dividendIncome: Money;      // 股息收入
+  totalWithDividend: Money;   // 含股息的年度收益
+  byCurrency: {               // 按币种明细
+    currency: Currency;
+    startValue: number;
+    endValue: number;
+    cashFlow: number;
+    return: number;
+  }[];
+}
+
 /** 完整税务计算结果 */
 export interface TaxResult {
   year: Year;
@@ -203,6 +221,7 @@ export interface TaxResult {
   dividendTax: DividendTax;
   interestTax: InterestTax;
   summary: TaxSummary;
+  annualReturn?: AnnualReturn;  // 年度收益（富途口径）
 }
 
 // ============ 汇率数据 ============

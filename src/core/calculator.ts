@@ -10,6 +10,7 @@
  */
 
 import type {
+  AnnualReturn,
   CapitalGainDetail,
   CapitalGainsTax,
   Currency,
@@ -17,6 +18,7 @@ import type {
   DividendCurrencySummary,
   DividendRecord,
   DividendTax,
+  Holding,
   InterestRecord,
   InterestTax,
   Money,
@@ -36,22 +38,41 @@ import {
 /** 税率常量 */
 const TAX_RATE = 0.2; // 20%
 
+/** 内部使用的买入记录 */
+interface BuyRecord {
+  tradeTime: string;
+  symbol: string;
+  market: string;
+  category: string;
+  currency: Currency;
+  quantity: number;
+  price: number;          // 单价（用于显示）
+  tradeAmount: number;    // 成交金额（已包含期权乘数）
+  totalFee: number;
+  isFromHolding: boolean; // 是否来自期初持仓
+}
+
 /**
  * 计算资本利得税
- * 
+ *
  * 基于交易流水计算买卖差价
  * 同一年度内盈亏可互抵
  * 支持证券和期权交易
+ * 支持使用期初持仓作为跨年持仓的成本基础
  */
 export function calculateCapitalGains(
   transactions: Transaction[],
-  year: Year
+  year: Year,
+  holdings: Holding[] = []
 ): CapitalGainsTax {
   const details: CapitalGainDetail[] = [];
-  
+
+  // 获取期初持仓（作为跨年持仓的成本基础）
+  const startHoldings = holdings.filter(h => h.periodType === '期初');
+
   // 按股票/期权代码分组交易
   const tradesBySymbol = new Map<string, Transaction[]>();
-  
+
   for (const tx of transactions) {
     const key = `${tx.symbol}-${tx.market}-${tx.currency}-${tx.category}`;
     if (!tradesBySymbol.has(key)) {
@@ -59,48 +80,85 @@ export function calculateCapitalGains(
     }
     tradesBySymbol.get(key)!.push(tx);
   }
-  
+
   // 使用 FIFO 方法计算每个股票/期权的盈亏
   for (const [key, trades] of tradesBySymbol) {
     // 分离买入和卖出
-    const buys: Transaction[] = [];
+    const buys: BuyRecord[] = [];
     const sells: Transaction[] = [];
-    
+
+    // 先查找期初持仓，作为最早的"买入"
+    const [symbol, market, currency, category] = key.split('-');
+    const holding = startHoldings.find(h =>
+      h.symbol === symbol &&
+      h.market === market &&
+      h.currency === currency &&
+      (h.category === category ||
+       (category === '证券' && h.category === '证券') ||
+       (category === '期权' && h.category === '期权'))
+    );
+
+    if (holding && holding.quantity > 0) {
+      // 将期初持仓转换为"虚拟买入"
+      // 期初持仓的 marketValue 已经是总市值（期权已包含乘数）
+      buys.push({
+        tradeTime: `${year}-01-01 00:00:00`,
+        symbol: holding.symbol,
+        market: holding.market,
+        category: holding.category,
+        currency: holding.currency,
+        quantity: holding.quantity,
+        price: holding.price,
+        tradeAmount: holding.marketValue, // 直接使用市值
+        totalFee: 0,
+        isFromHolding: true,
+      });
+    }
+
+    // 添加当年的买入交易
     for (const tx of trades) {
       if (tx.direction.includes('买入')) {
-        buys.push(tx);
+        buys.push({
+          tradeTime: tx.tradeTime,
+          symbol: tx.symbol,
+          market: tx.market,
+          category: tx.category,
+          currency: tx.currency,
+          quantity: tx.quantity,
+          price: tx.price,
+          tradeAmount: Math.abs(tx.tradeAmount), // 成交金额（已包含乘数）
+          totalFee: tx.totalFee,
+          isFromHolding: false,
+        });
       } else if (tx.direction.includes('卖出')) {
         sells.push(tx);
       }
     }
-    
-    // 按时间排序
+
+    // 按时间排序（期初持仓会排在最前面）
     buys.sort((a, b) => a.tradeTime.localeCompare(b.tradeTime));
     sells.sort((a, b) => a.tradeTime.localeCompare(b.tradeTime));
-    
+
     // FIFO 匹配
     let buyIdx = 0;
     let buyRemaining = buys[0]?.quantity || 0;
-    
+
     for (const sell of sells) {
       let sellRemaining = sell.quantity;
-      const isOption = sell.category === '期权';
-      // 期权乘数为100，证券为1
-      const multiplier = isOption ? 100 : 1;
-      
+
       while (sellRemaining > 0 && buyIdx < buys.length) {
         const buy = buys[buyIdx];
         const matchQty = Math.min(sellRemaining, buyRemaining);
-        
+
         if (matchQty > 0) {
-          // 期权价格需要乘以乘数
-          const buyAmount = matchQty * buy.price * multiplier;
-          const sellAmount = matchQty * sell.price * multiplier;
-          const fees = (buy.totalFee * matchQty / buy.quantity) + 
+          // 按比例计算成交金额（直接使用已包含乘数的金额）
+          const buyAmount = buy.tradeAmount * matchQty / buy.quantity;
+          const sellAmount = Math.abs(sell.tradeAmount) * matchQty / sell.quantity;
+          const fees = (buy.totalFee * matchQty / buy.quantity) +
                        (sell.totalFee * matchQty / sell.quantity);
           const gain = sellAmount - buyAmount - fees;
           const gainCNY = convertToCNY(gain, sell.currency, year);
-          
+
           details.push({
             symbol: sell.symbol,
             market: sell.market,
@@ -108,7 +166,7 @@ export function calculateCapitalGains(
             buyDate: buy.tradeTime.split(' ')[0],
             sellDate: sell.tradeTime.split(' ')[0],
             quantity: matchQty,
-            multiplier,
+            multiplier: 1, // 已在成交金额中包含，此处仅为兼容
             buyPrice: buy.price,
             sellPrice: sell.price,
             buyAmount: createMoney(buyAmount, sell.currency),
@@ -116,12 +174,13 @@ export function calculateCapitalGains(
             fees: createMoney(fees, sell.currency),
             gain: createMoney(gain, sell.currency),
             gainCNY: createMoney(gainCNY, 'CNY'),
+            isEstimatedCost: buy.isFromHolding,
           });
-          
+
           sellRemaining -= matchQty;
           buyRemaining -= matchQty;
         }
-        
+
         if (buyRemaining <= 0) {
           buyIdx++;
           buyRemaining = buys[buyIdx]?.quantity || 0;
@@ -129,7 +188,7 @@ export function calculateCapitalGains(
       }
     }
   }
-  
+
   // 按币种汇总
   const currencyMap = new Map<Currency, { gain: number; gainCNY: number }>();
   for (const d of details) {
@@ -141,18 +200,18 @@ export function calculateCapitalGains(
     summary.gain += d.gain.amount;
     summary.gainCNY += d.gainCNY.amount;
   }
-  
+
   const byCurrency: CurrencySummary[] = Array.from(currencyMap.entries()).map(
     ([currency, { gain, gainCNY }]) => ({ currency, totalGain: gain, totalGainCNY: gainCNY })
   );
-  
+
   // 计算总盈亏（人民币）
   const totalGainCNY = details.reduce((sum, d) => sum + d.gainCNY.amount, 0);
-  
+
   // 应税所得为盈利部分（同年度内盈亏互抵后）
   const taxableGain = Math.max(0, totalGainCNY);
   const taxAmount = taxableGain * TAX_RATE;
-  
+
   return {
     totalGain: createMoney(totalGainCNY, 'CNY'),
     taxableGain: createMoney(taxableGain, 'CNY'),
@@ -282,6 +341,82 @@ export function calculateTaxSummary(
 }
 
 /**
+ * 计算年度收益（富途口径）
+ *
+ * 使用市值变化法：年度收益 = 期末市值 - 期初市值 + 净现金流
+ * 这包含了未实现盈亏，与税务计算的已实现盈亏不同
+ */
+export function calculateAnnualReturn(
+  holdings: Holding[],
+  transactions: Transaction[],
+  dividends: DividendRecord[],
+  year: Year
+): AnnualReturn {
+  const startHoldings = holdings.filter(h => h.periodType === '期初');
+  const endHoldings = holdings.filter(h => h.periodType === '期末');
+
+  // 按币种统计
+  const currencies: Currency[] = ['USD', 'HKD'];
+  const byCurrency: AnnualReturn['byCurrency'] = [];
+
+  let totalStartValueCNY = 0;
+  let totalEndValueCNY = 0;
+  let totalCashFlowCNY = 0;
+
+  for (const currency of currencies) {
+    // 期初市值
+    const startValue = startHoldings
+      .filter(h => h.currency === currency)
+      .reduce((sum, h) => sum + h.marketValue, 0);
+
+    // 期末市值
+    const endValue = endHoldings
+      .filter(h => h.currency === currency)
+      .reduce((sum, h) => sum + h.marketValue, 0);
+
+    // 净现金流（变动金额之和：买入为负，卖出为正）
+    const cashFlow = transactions
+      .filter(t => t.currency === currency)
+      .reduce((sum, t) => sum + t.changeAmount, 0);
+
+    // 年度收益 = 期末 - 期初 + 净现金流
+    const returnAmount = endValue - startValue + cashFlow;
+
+    if (startValue !== 0 || endValue !== 0 || cashFlow !== 0) {
+      byCurrency.push({
+        currency,
+        startValue,
+        endValue,
+        cashFlow,
+        return: returnAmount,
+      });
+
+      totalStartValueCNY += convertToCNY(startValue, currency, year);
+      totalEndValueCNY += convertToCNY(endValue, currency, year);
+      totalCashFlowCNY += convertToCNY(cashFlow, currency, year);
+    }
+  }
+
+  const totalReturnCNY = totalEndValueCNY - totalStartValueCNY + totalCashFlowCNY;
+
+  // 股息收入
+  const dividendIncomeCNY = dividends.reduce(
+    (sum, d) => sum + convertToCNY(d.grossAmount, d.currency, year),
+    0
+  );
+
+  return {
+    startMarketValue: createMoney(totalStartValueCNY, 'CNY'),
+    endMarketValue: createMoney(totalEndValueCNY, 'CNY'),
+    netCashFlow: createMoney(totalCashFlowCNY, 'CNY'),
+    totalReturn: createMoney(totalReturnCNY, 'CNY'),
+    dividendIncome: createMoney(dividendIncomeCNY, 'CNY'),
+    totalWithDividend: createMoney(totalReturnCNY + dividendIncomeCNY, 'CNY'),
+    byCurrency,
+  };
+}
+
+/**
  * 计算完整税务结果
  */
 export function calculateTax(bills: ParsedBill[], targetYear?: Year): TaxResult[] {
@@ -298,33 +433,38 @@ export function calculateTax(bills: ParsedBill[], targetYear?: Year): TaxResult[
   }
   
   const results: TaxResult[] = [];
-  
+
   for (const [year, yearBills] of billsByYear) {
     const rate = getExchangeRate(year);
     if (!rate) {
       console.warn(`跳过年份 ${year}：无汇率数据`);
       continue;
     }
-    
+
     // 合并该年度所有账单的数据
     const allTransactions: Transaction[] = [];
     const allDividends: DividendRecord[] = [];
     const allInterests: InterestRecord[] = [];
-    
+    const allHoldings: Holding[] = [];
+
     for (const bill of yearBills) {
       if (bill.fileType === 'annual') {
         allTransactions.push(...bill.transactions);
         allDividends.push(...bill.dividends);
         allInterests.push(...bill.interests);
+        allHoldings.push(...bill.holdings);
       }
     }
-    
-    // 计算各项税务
-    const capitalGains = calculateCapitalGains(allTransactions, year);
+
+    // 计算各项税务（传入持仓数据以支持跨年持仓成本计算）
+    const capitalGains = calculateCapitalGains(allTransactions, year, allHoldings);
     const dividendTax = calculateDividendTax(allDividends, year);
     const interestTax = calculateInterestTax(allInterests, year);
     const summary = calculateTaxSummary(capitalGains, dividendTax, interestTax);
-    
+
+    // 计算年度收益（富途口径）
+    const annualReturn = calculateAnnualReturn(allHoldings, allTransactions, allDividends, year);
+
     results.push({
       year,
       exchangeRate: {
@@ -337,6 +477,7 @@ export function calculateTax(bills: ParsedBill[], targetYear?: Year): TaxResult[
       dividendTax,
       interestTax,
       summary,
+      annualReturn,
     });
   }
   

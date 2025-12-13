@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { Calculator, Shield, Github, ExternalLink } from 'lucide-react';
+import { Calculator, Shield, ExternalLink } from 'lucide-react';
+import { SiGithub } from '@icons-pack/react-simple-icons';
 import { FileUploader } from './components/FileUploader';
 import { TaxResultDisplay } from './components/TaxResult';
 import { parseBillFromBuffer, calculateTax } from './core';
@@ -68,8 +69,8 @@ export function App() {
             rel="noopener noreferrer"
             className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 transition-colors"
           >
-            <Github className="w-4 h-4" />
-            <span className="hidden sm:inline">⭐ Star</span>
+            <SiGithub className="w-4 h-4" />
+            <span className="hidden sm:inline">GitHub</span>
           </a>
         </div>
       </header>
@@ -214,8 +215,8 @@ export function App() {
                 rel="noopener noreferrer"
                 className="hover:text-gray-700 flex items-center gap-1"
               >
-                <Github className="w-4 h-4" />
-                ⭐ 给个 Star
+                <SiGithub className="w-4 h-4" />
+                GitHub
               </a>
             </div>
           </div>

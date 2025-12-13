@@ -1,15 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronDown, ChevronUp, Download, Info, HelpCircle, AlertTriangle, Calculator } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
 import type { TaxResult as TaxResultType } from '../core/types';
 import { formatMoney, createMoney, convert, formatNumberWithCurrency } from '../core/exchange';
 import { exportTaxResultToCSV, generateTaxReport } from '../core/calculator';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from './ui/select';
 
 interface TaxResultProps {
   results: TaxResultType[];
@@ -64,19 +58,19 @@ function LateFeeCalculator({ taxAmount, year }: { taxAmount: number; year: numbe
   const calculateLateFee = () => {
     if (!selectedDate) return null;
     const payDate = new Date(selectedDate);
-    
+
     // 如果在截止日期前，无需缴纳滞纳金
     if (payDate <= deadline) {
       return { days: 0, fee: 0, total: taxAmount };
     }
-    
+
     // 滞纳天数从逾期次日起计算
     const diffTime = payDate.getTime() - deadline.getTime();
     const days = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+
     // 滞纳金 = 应纳税额 × 滞纳天数 × 0.05%
     const fee = taxAmount * days * 0.0005;
-    
+
     return {
       days,
       fee: Math.round(fee * 100) / 100,
@@ -97,7 +91,7 @@ function LateFeeCalculator({ taxAmount, year }: { taxAmount: number; year: numbe
         <Calculator className="w-4 h-4" />
         {showCalculator ? '收起滞纳金计算器' : '如未按时缴税，查看滞纳金'}
       </button>
-      
+
       {showCalculator && (
         <div className="mt-3 p-4 bg-amber-50 rounded-xl border border-amber-100">
           <div className="flex items-start gap-2 mb-3">
@@ -108,7 +102,7 @@ function LateFeeCalculator({ taxAmount, year }: { taxAmount: number; year: numbe
               <p className="mt-1">{year}年度个税汇算截止日期为 <strong>{deadlineStr}</strong>，逾期未缴将从7月1日起计算滞纳金。</p>
             </div>
           </div>
-          
+
           <div className="mt-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               选择预计缴税日期：
@@ -121,7 +115,7 @@ function LateFeeCalculator({ taxAmount, year }: { taxAmount: number; year: numbe
               className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
             />
           </div>
-          
+
           {result && selectedDate && (
             <div className="mt-4 p-3 bg-white rounded-lg">
               {result.days === 0 ? (
@@ -156,22 +150,22 @@ function LateFeeCalculator({ taxAmount, year }: { taxAmount: number; year: numbe
   );
 }
 
-function ResultCard({ 
-  title, 
-  value, 
+function ResultCard({
+  title,
+  value,
   subtitle,
-  highlight = false 
-}: { 
-  title: string; 
-  value: string; 
+  highlight = false
+}: {
+  title: string;
+  value: string;
   subtitle?: string;
   highlight?: boolean;
 }) {
   return (
     <div className={`
       p-4 rounded-xl border transition-colors
-      ${highlight 
-        ? 'bg-blue-50 border-blue-100' 
+      ${highlight
+        ? 'bg-blue-50 border-blue-100'
         : 'bg-white border-gray-100'
       }
     `}>
@@ -191,6 +185,7 @@ type DetailTab = 'capital' | 'dividend' | 'rate';
 function YearResult({ result, displayCurrency }: { result: TaxResultType, displayCurrency: 'CNY' | 'USD' | 'HKD' }) {
   const [expanded, setExpanded] = useState(true);
   const [activeTab, setActiveTab] = useState<DetailTab>('capital');
+  const [showFutuCompare, setShowFutuCompare] = useState(false);
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
@@ -255,10 +250,54 @@ function YearResult({ result, displayCurrency }: { result: TaxResultType, displa
         </div>
 
         {/* 滞纳金计算器 - 放在概览卡片下方 */}
-        <LateFeeCalculator 
-          taxAmount={result.summary.netTaxPayable.amount} 
-          year={result.year} 
+        <LateFeeCalculator
+          taxAmount={result.summary.netTaxPayable.amount}
+          year={result.year}
         />
+
+        {/* 与富途核对 */}
+        {result.annualReturn && (
+          <div className="mt-4">
+            <button
+              onClick={() => setShowFutuCompare(!showFutuCompare)}
+              className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <Info className="w-3.5 h-3.5" />
+              {showFutuCompare ? '收起' : '与富途APP核对数据'}
+            </button>
+
+            {showFutuCompare && (
+              <div className="mt-3 p-4 bg-gray-50 rounded-xl text-sm">
+                <div className="flex items-start gap-2 mb-3">
+                  <Info className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                  <p className="text-gray-500">
+                    以下为富途口径的「年度收益」，包含未实现盈亏，与税务申报的「已实现盈亏」不同。
+                  </p>
+                </div>
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <p className="text-xs text-gray-400">期初市值</p>
+                    <p className="text-base font-medium text-gray-700">
+                      {formatNumberWithCurrency(convert(result.annualReturn.startMarketValue.amount, 'CNY', displayCurrency, result.year), displayCurrency)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-400">期末市值</p>
+                    <p className="text-base font-medium text-gray-700">
+                      {formatNumberWithCurrency(convert(result.annualReturn.endMarketValue.amount, 'CNY', displayCurrency, result.year), displayCurrency)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-400">年度收益</p>
+                    <p className={`text-base font-medium ${result.annualReturn.totalReturn.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {formatNumberWithCurrency(convert(result.annualReturn.totalReturn.amount, 'CNY', displayCurrency, result.year), displayCurrency)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* 展开详情 */}
         <button
@@ -275,31 +314,28 @@ function YearResult({ result, displayCurrency }: { result: TaxResultType, displa
             <div className="flex gap-1 border-b border-gray-200 mb-4">
               <button
                 onClick={() => setActiveTab('capital')}
-                className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
-                  activeTab === 'capital'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
+                className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${activeTab === 'capital'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
               >
                 资本利得（{result.capitalGains.details.length}）
               </button>
               <button
                 onClick={() => setActiveTab('dividend')}
-                className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
-                  activeTab === 'dividend'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
+                className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${activeTab === 'dividend'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
               >
                 股息（{result.dividendTax.details.length}）
               </button>
               <button
                 onClick={() => setActiveTab('rate')}
-                className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
-                  activeTab === 'rate'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
+                className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${activeTab === 'rate'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
               >
                 汇率信息
               </button>
@@ -308,6 +344,18 @@ function YearResult({ result, displayCurrency }: { result: TaxResultType, displa
             {/* 资本利得明细 */}
             {activeTab === 'capital' && (
               <div>
+                {/* 跨年持仓成本说明 */}
+                {result.capitalGains.details.some(d => d.isEstimatedCost) && (
+                  <div className="mb-4 p-3 bg-amber-50 rounded-lg text-sm">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                      <div className="text-amber-700">
+                        <p><strong>跨年持仓成本说明</strong></p>
+                        <p className="mt-1">部分交易标记为「估算成本」，表示该股票为跨年持仓（去年买入，今年卖出）。成本使用期初持仓市价估算，可能与实际买入价有差异。</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 {result.capitalGains.details.length > 0 ? (
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
@@ -329,7 +377,12 @@ function YearResult({ result, displayCurrency }: { result: TaxResultType, displa
                             <td className="py-2 pr-4 font-medium">{d.symbol}{d.category === '期权' ? '（期权）' : ''}</td>
                             <td className="py-2 pr-4">{d.quantity}</td>
                             <td className="py-2 pr-4">{d.multiplier}</td>
-                            <td className="py-2 pr-4">{formatMoney(d.buyAmount)}</td>
+                            <td className="py-2 pr-4">
+                              {formatMoney(d.buyAmount)}
+                              {d.isEstimatedCost && (
+                                <span className="ml-1 text-xs text-amber-600">（估算）</span>
+                              )}
+                            </td>
                             <td className="py-2 pr-4">{formatMoney(d.sellAmount)}</td>
                             <td className="py-2 pr-4">{formatMoney(d.fees)}</td>
                             <td className={`py-2 pr-4 ${d.gain.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -361,59 +414,59 @@ function YearResult({ result, displayCurrency }: { result: TaxResultType, displa
                       <p className="mt-1">预扣税是境外（如美国、香港）公司在派发股息时，<strong>由当地税务机关直接扣除</strong>的税款。例如美股股息通常被预扣10%的税。这部分税款您已实际支付，在计算中国个税时可以<strong>抵免</strong>，避免重复纳税。</p>
                     </div>
                   </div>
-              </div>
-              {/* 按币种汇总 - 方便核对 */}
-              {result.dividendTax.byCurrency.length > 0 && (
-                <div className="mb-4 p-3 bg-blue-50 rounded-lg text-sm">
-                  <p className="text-blue-700 font-medium mb-1">按币种汇总（原币种，用于核对账单）：</p>
-                  {result.dividendTax.byCurrency.map((c, i) => (
-                    <p key={i} className="text-blue-600">
-                      {c.currency}: 股息 {formatNumberWithCurrency(c.totalDividend, c.currency)} | 
-                      预扣税 {formatNumberWithCurrency(c.withholdingTax, c.currency)}
-                      <HelpTooltip text="预扣税是境外在派发股息时已扣除的税款，可用于抵免中国个税" />
-                    </p>
-                  ))}
                 </div>
-              )}
-              {result.dividendTax.details.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-left text-gray-500 border-b">
-                        <th className="pb-2 pr-4">股票</th>
-                        <th className="pb-2 pr-4">日期</th>
-                        <th className="pb-2 pr-4">税前股息</th>
-                        <th className="pb-2 pr-4">
-                          <span className="inline-flex items-center">
-                            预扣税
-                            <HelpTooltip text="境外在派发股息时已代扣的税款，可抵免中国个税" />
-                          </span>
-                        </th>
-                        <th className="pb-2">税后股息</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {result.dividendTax.details.map((d, i) => (
-                        <tr key={i} className="border-b border-gray-50">
-                          <td className="py-2 pr-4 font-medium">{d.symbol}</td>
-                          <td className="py-2 pr-4">{d.date}</td>
-                          <td className="py-2 pr-4">
-                            {formatMoney(createMoney(d.grossAmount, d.currency))}
-                          </td>
-                          <td className="py-2 pr-4 text-red-600">
-                            -{formatMoney(createMoney(d.withholdingTax, d.currency))}
-                          </td>
-                          <td className="py-2">
-                            {formatMoney(createMoney(d.netAmount, d.currency))}
-                          </td>
+                {/* 按币种汇总 - 方便核对 */}
+                {result.dividendTax.byCurrency.length > 0 && (
+                  <div className="mb-4 p-3 bg-blue-50 rounded-lg text-sm">
+                    <p className="text-blue-700 font-medium mb-1">按币种汇总（原币种，用于核对账单）：</p>
+                    {result.dividendTax.byCurrency.map((c, i) => (
+                      <p key={i} className="text-blue-600">
+                        {c.currency}: 股息 {formatNumberWithCurrency(c.totalDividend, c.currency)} |
+                        预扣税 {formatNumberWithCurrency(c.withholdingTax, c.currency)}
+                        <HelpTooltip text="预扣税是境外在派发股息时已扣除的税款，可用于抵免中国个税" />
+                      </p>
+                    ))}
+                  </div>
+                )}
+                {result.dividendTax.details.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="text-left text-gray-500 border-b">
+                          <th className="pb-2 pr-4">股票</th>
+                          <th className="pb-2 pr-4">日期</th>
+                          <th className="pb-2 pr-4">税前股息</th>
+                          <th className="pb-2 pr-4">
+                            <span className="inline-flex items-center">
+                              预扣税
+                              <HelpTooltip text="境外在派发股息时已代扣的税款，可抵免中国个税" />
+                            </span>
+                          </th>
+                          <th className="pb-2">税后股息</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <p className="text-sm text-gray-400 py-4">无股息记录</p>
-              )}
+                      </thead>
+                      <tbody>
+                        {result.dividendTax.details.map((d, i) => (
+                          <tr key={i} className="border-b border-gray-50">
+                            <td className="py-2 pr-4 font-medium">{d.symbol}</td>
+                            <td className="py-2 pr-4">{d.date}</td>
+                            <td className="py-2 pr-4">
+                              {formatMoney(createMoney(d.grossAmount, d.currency))}
+                            </td>
+                            <td className="py-2 pr-4 text-red-600">
+                              -{formatMoney(createMoney(d.withholdingTax, d.currency))}
+                            </td>
+                            <td className="py-2">
+                              {formatMoney(createMoney(d.netAmount, d.currency))}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-400 py-4">无股息记录</p>
+                )}
               </div>
             )}
 
@@ -440,7 +493,7 @@ function YearResult({ result, displayCurrency }: { result: TaxResultType, displa
 }
 
 export function TaxResultDisplay({ results, unrecognized = [] }: TaxResultProps) {
-  const [displayCurrency, setDisplayCurrency] = useState<'CNY' | 'USD' | 'HKD'>('CNY');
+  const [displayCurrency, setDisplayCurrency] = useState<'CNY' | 'USD' | 'HKD'>('USD');
   const [activeYear, setActiveYear] = useState<number>(results[0]?.year ?? new Date().getFullYear());
 
   // results 变化时自动切换到最新年度
@@ -493,16 +546,14 @@ export function TaxResultDisplay({ results, unrecognized = [] }: TaxResultProps)
         </div>
 
         <div className="flex items-center gap-2">
-          <Select value={displayCurrency} onValueChange={(v) => setDisplayCurrency(v as 'CNY' | 'USD' | 'HKD')}>
-            <SelectTrigger className="w-[130px]" aria-label="显示币种">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="CNY">人民币 CNY</SelectItem>
-              <SelectItem value="USD">美元 USD</SelectItem>
-              <SelectItem value="HKD">港币 HKD</SelectItem>
-            </SelectContent>
-          </Select>
+          {/* 币种切换 Tabs */}
+          <Tabs value={displayCurrency} onValueChange={(v) => setDisplayCurrency(v as 'CNY' | 'USD' | 'HKD')}>
+            <TabsList>
+              <TabsTrigger value="USD">USD</TabsTrigger>
+              <TabsTrigger value="CNY">CNY</TabsTrigger>
+              <TabsTrigger value="HKD">HKD</TabsTrigger>
+            </TabsList>
+          </Tabs>
 
           <div className="flex gap-2">
             <button

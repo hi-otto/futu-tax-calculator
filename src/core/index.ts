@@ -37,6 +37,7 @@ export {
   calculateDividendTax,
   calculateInterestTax,
   calculateTaxSummary,
+  calculateAnnualReturn,
   calculateTax,
   formatTaxResultForDisplay,
   exportTaxResultToCSV,

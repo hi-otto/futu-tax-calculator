@@ -1,12 +1,9 @@
 # 富途税务计算器 (futu-tax-calculator)
 
-[![GitHub stars](https://img.shields.io/github/stars/hi-otto/futu-tax-calculator?style=social)](https://github.com/hi-otto/futu-tax-calculator)
 [![Docker](https://img.shields.io/badge/Docker-ghcr.io-blue?logo=docker)](https://github.com/hi-otto/futu-tax-calculator/pkgs/container/futu-tax-calculator)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 一款隐私友好、开源的境外证券投资税务计算工具，帮助中国大陆税务居民快速计算港美股投资收益应缴纳的个人所得税。
-
-> ⭐ 如果这个项目对你有帮助，请给个 Star 支持一下！
 
 ## 特性
 
