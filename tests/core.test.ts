@@ -26,6 +26,13 @@ describe('汇率模块', () => {
     expect(years.length).toBeGreaterThanOrEqual(5);
   });
 
+  test('获取2025年汇率数据', () => {
+    const rate = getExchangeRate(2025);
+    expect(rate).not.toBeNull();
+    expect(rate?.USD).toBe(702.88);
+    expect(rate?.HKD).toBe(90.322);
+  });
+
   test('获取2024年汇率数据', () => {
     const rate = getExchangeRate(2024);
     expect(rate).not.toBeNull();
