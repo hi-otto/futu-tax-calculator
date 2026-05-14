@@ -53,6 +53,10 @@ function parseCurrency(value: string): Currency {
   return 'HKD'; // 默认港币
 }
 
+function normalizeDirection(value: unknown): string {
+  return String(value || '').trim().toUpperCase();
+}
+
 /**
  * 安全解析数字
  */
@@ -160,7 +164,7 @@ function parseTransactions(
       return idx >= 0 ? row[idx] : undefined;
     };
 
-    const direction = String(getCol('方向') || '');
+    const direction = normalizeDirection(getCol('方向'));
     if (!direction) {
       // 记录被跳过的行
       const symbol = String(getCol('代码名称') || '');
@@ -218,7 +222,7 @@ function parseFundFlows(
       return idx >= 0 ? row[idx] : undefined;
     };
 
-    const direction = String(getCol('方向') || '');
+    const direction = normalizeDirection(getCol('方向'));
     if (!direction.includes('IN') && !direction.includes('OUT')) {
       // 记录被跳过的行
       const amount = parseNumber(getCol('变动金额'));
