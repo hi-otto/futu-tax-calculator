@@ -25,7 +25,9 @@ import type {
  * 从文件名中提取年份
  */
 export function extractYearFromFileName(fileName: string): Year | null {
-  const match = fileName.match(/^(\d{4})_/);
+  const match =
+    fileName.match(/(?:^|[^\d])((?:19|20)\d{2})(?=_)/) ||
+    fileName.match(/(?:^|[^\d])((?:19|20)\d{2})(?=[^\d]*(?:年度账单|利息股息))/);
   return match ? parseInt(match[1], 10) : null;
 }
 
@@ -219,7 +221,8 @@ function parseFundFlows(
     };
 
     const direction = String(getCol('方向') || '');
-    if (!direction.includes('IN') && !direction.includes('OUT')) {
+    const directionUpper = direction.toUpperCase();
+    if (!directionUpper.includes('IN') && !directionUpper.includes('OUT')) {
       // 记录被跳过的行
       const amount = parseNumber(getCol('变动金额'));
       if (amount !== 0) {
@@ -238,7 +241,7 @@ function parseFundFlows(
       accountName: String(getCol('账户名称') || ''),
       accountId: String(getCol('账户号码') || ''),
       type: String(getCol('类型') || ''),
-      direction: direction.includes('IN') ? 'IN' : 'OUT',
+      direction: directionUpper.includes('IN') ? 'IN' : 'OUT',
       currency: parseCurrency(String(getCol('币种') || '')),
       amount: Math.abs(parseNumber(getCol('变动金额'))),
       remark: String(getCol('备注') || ''),
@@ -369,7 +372,8 @@ function parseDividendSummary(sheet: XLSX.WorkSheet): DividendSummaryRecord[] {
  * 解析年度账单文件
  */
 export function parseAnnualBill(workbook: XLSX.WorkBook, fileName: string): ParsedBill {
-  const year = extractYearFromFileName(fileName) || new Date().getFullYear();
+  const extractedYear = extractYearFromFileName(fileName);
+  const year = extractedYear || new Date().getFullYear();
   const unrecognized: UnrecognizedRecord[] = [];
   
   const result: ParsedBill = {
@@ -401,6 +405,11 @@ export function parseAnnualBill(workbook: XLSX.WorkBook, fileName: string): Pars
     // 其他已知辅助表（资金总览、资产进出、参考汇率等）无需报告
   }
 
+  if (!extractedYear) {
+    const accountYear = result.accountInfo.find(a => a.year > 0)?.year;
+    if (accountYear) result.year = accountYear;
+  }
+
   // 从资金进出中提取股息和利息
   result.dividends = extractDividendsFromFundFlows(result.fundFlows);
   result.interests = extractInterestsFromFundFlows(result.fundFlows);
@@ -412,7 +421,8 @@ export function parseAnnualBill(workbook: XLSX.WorkBook, fileName: string): Pars
  * 解析利息股息汇总文件
  */
 export function parseDividendSummaryFile(workbook: XLSX.WorkBook, fileName: string): ParsedBill {
-  const year = extractYearFromFileName(fileName) || new Date().getFullYear();
+  const extractedYear = extractYearFromFileName(fileName);
+  const year = extractedYear || new Date().getFullYear();
   
   const result: ParsedBill = {
     year,
@@ -453,6 +463,11 @@ export function parseDividendSummaryFile(workbook: XLSX.WorkBook, fileName: stri
         }
       }
     }
+  }
+
+  if (!extractedYear) {
+    const accountYear = result.accountInfo.find(a => a.year > 0)?.year;
+    if (accountYear) result.year = accountYear;
   }
 
   return result;

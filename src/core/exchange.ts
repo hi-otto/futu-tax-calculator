@@ -15,6 +15,13 @@ import type { Currency, ExchangeRateData, Money, Year } from './types';
  */
 export const EXCHANGE_RATES: ExchangeRateData[] = [
   {
+    year: 2025,
+    date: '2025-12-31',
+    USD: 702.88,
+    HKD: 90.322,
+    source: '中国人民银行/中国外汇交易中心',
+  },
+  {
     year: 2024,
     date: '2024-12-31',
     USD: 718.84,

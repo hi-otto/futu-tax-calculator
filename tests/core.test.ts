@@ -1,4 +1,5 @@
 import { test, expect, describe } from 'bun:test';
+import * as XLSX from 'xlsx';
 import {
   convertToCNY,
   createMoney,
@@ -10,20 +11,30 @@ import {
 import {
   extractYearFromFileName,
   detectFileType,
+  parseBillFile,
 } from '../src/core/parser';
 import {
   calculateCapitalGains,
   calculateDividendTax,
   calculateInterestTax,
+  calculateTax,
 } from '../src/core/calculator';
 import type { Transaction, DividendRecord, InterestRecord } from '../src/core/types';
 
 describe('汇率模块', () => {
   test('获取支持的年份列表', () => {
     const years = getSupportedYears();
+    expect(years).toContain(2025);
     expect(years).toContain(2024);
     expect(years).toContain(2023);
     expect(years.length).toBeGreaterThanOrEqual(5);
+  });
+
+  test('获取2025年汇率数据', () => {
+    const rate = getExchangeRate(2025);
+    expect(rate).not.toBeNull();
+    expect(rate?.USD).toBe(702.88);
+    expect(rate?.HKD).toBe(90.322);
   });
 
   test('获取2024年汇率数据', () => {
@@ -78,6 +89,7 @@ describe('汇率模块', () => {
 describe('解析模块', () => {
   test('从文件名提取年份', () => {
     expect(extractYearFromFileName('2024_年度账单_XXXXXXXX.xlsx')).toBe(2024);
+    expect(extractYearFromFileName('1-2025_年度账单_XXXXXXXX.xlsx')).toBe(2025);
     expect(extractYearFromFileName('2023_利息股息及其他收入汇总_XXXXXXXX.xlsx')).toBe(2023);
     expect(extractYearFromFileName('invalid_file.xlsx')).toBeNull();
   });
@@ -86,6 +98,31 @@ describe('解析模块', () => {
     expect(detectFileType('2024_年度账单_XXXXXXXX.xlsx')).toBe('annual');
     expect(detectFileType('2024_利息股息及其他收入汇总_XXXXXXXX.xlsx')).toBe('dividend_summary');
     expect(detectFileType('random_file.xlsx')).toBeNull();
+  });
+
+  test('兼容2025年度账单的In/Out资金进出方向', () => {
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([
+      ['姓名', '牛牛号', '账户号码', '账户名称', '年份'],
+      ['黄云', '12356866', '1001283069788093', '保證金綜合帳戶(8093) - 證券', '2025'],
+    ]), '账户信息');
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([
+      ['日期', '账户名称', '账户号码', '类型', '方向', '币种', '变动金额', '备注'],
+      ['20250106', '保證金綜合帳戶(8093) - 證券', '1001283069788093', '公司行动', 'In', 'USD', '124.51000000', 'WMT 600.00000000 SHARES DIVIDENDS 0.20749987 USD PER SHARE'],
+      ['20250106', '保證金綜合帳戶(8093) - 證券', '1001283069788093', '公司行动', 'Out', 'USD', '-12.46000000', 'WMT 600.00000000 SHARES WITHHOLDING TAX -0.02074997 USD PER SHARE - TAX'],
+    ]), '证券-资金进出');
+
+    const bill = parseBillFile(workbook, '1-2025_年度账单_12356866.xlsx');
+    expect(bill.year).toBe(2025);
+    expect(bill.fundFlows).toHaveLength(2);
+    expect(bill.unrecognized).toHaveLength(0);
+    expect(bill.dividends).toHaveLength(1);
+    expect(bill.dividends[0].grossAmount).toBeCloseTo(124.51, 2);
+    expect(bill.dividends[0].withholdingTax).toBeCloseTo(12.46, 2);
+
+    const results = calculateTax([bill], 2025);
+    expect(results).toHaveLength(1);
+    expect(results[0].dividendTax.totalDividend.amount).toBeCloseTo(124.51 * 7.0288, 2);
   });
 });
 

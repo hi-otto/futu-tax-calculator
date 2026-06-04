@@ -158,6 +158,7 @@ export function calculateCapitalGains(
                        (sell.totalFee * matchQty / sell.quantity);
           const gain = sellAmount - buyAmount - fees;
           const gainCNY = convertToCNY(gain, sell.currency, year);
+          const multiplier = holding?.multiplier || (sell.category === '期权' ? 100 : 1);
 
           details.push({
             symbol: sell.symbol,
@@ -166,7 +167,7 @@ export function calculateCapitalGains(
             buyDate: buy.tradeTime.split(' ')[0],
             sellDate: sell.tradeTime.split(' ')[0],
             quantity: matchQty,
-            multiplier: 1, // 已在成交金额中包含，此处仅为兼容
+            multiplier,
             buyPrice: buy.price,
             sellPrice: sell.price,
             buyAmount: createMoney(buyAmount, sell.currency),
